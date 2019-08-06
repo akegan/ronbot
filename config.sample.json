@@ -1,0 +1,4 @@
+{
+  "SLACKBOT_TOKEN": "get this token by creating a slack app: https://api.slack.com/start/overview",
+  "CIRCLECI_API_TOKEN": "get this token at https://circleci.com/account/api"
+}
