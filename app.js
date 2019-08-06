@@ -2,7 +2,7 @@ if(process.env.NODE_ENV === 'undefined' || process.env.NODE_ENV !== 'production'
 
 const express = require('express');
 const app = express();
-const port = process.env.PORT || 4390;
+const port = process.env.PORT;
 const bodyParser = require('body-parser');
 const axios = require('axios');
 const SLACKBOT_TOKEN = process.env.SLACKBOT_TOKEN;
@@ -92,7 +92,7 @@ app.post('/slack-interactive', (req, res) => {
 
 app.post('/slack-events', (req, res) => {
   if(req.body.challenge) {
-    res.send(req.body.challenge); // use this for verifying request url for event subscriptions
+    res.send(req.body.challenge); // use this for verifying request url for slack event subscriptions
   } else {
     let payload = req.body;
     res.sendStatus(200);
