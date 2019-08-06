@@ -2,7 +2,7 @@ if(process.env.NODE_ENV === 'undefined' || process.env.NODE_ENV !== 'production'
 
 const express = require('express');
 const app = express();
-const port = 4390;
+const port = process.env.port || 4390;
 const bodyParser = require('body-parser');
 const axios = require('axios');
 const SLACKBOT_TOKEN = process.env.SLACKBOT_TOKEN;
