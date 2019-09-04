@@ -65,13 +65,14 @@ app.post('/slack-interactive', (req, res) => {
                   parse: 'none',
                   text: '<@' + userId + '> sf.gov content sandbox build status: `' + status + '`'
                 });
-                if(status === 'success') {
+                if(status === 'success' || status === 'fixed' || status === 'failed') {
+                  let statusEmoji = status === 'failed' ? ':red_circle:' : ':white_check_mark:';
                   setTimeout(() => {
                     clearInterval(checkStatus);
                     postSlackMessage('https://slack.com/api/chat.postMessage', {
                       token: SLACKBOT_TOKEN,
                       channel: statusChannel,
-                      text: '<@' + userId + '> <https://content-sfgov.pantheonsite.io|sf.gov content sandbox> completed successfully'
+                      text: '<@' + userId + '> <https://content-sfgov.pantheonsite.io|sf.gov content sandbox> build finished with status: ' + statusEmoji + ' `' + status + '`'
                     });
                   },500);
                 }
@@ -96,80 +97,86 @@ app.post('/slack-events', (req, res) => {
   } else {
     let payload = req.body;
     res.sendStatus(200);
-  
-    if(payload.event.type === 'app_mention') {
-      if(payload.event.text.includes('quote')) {
-        axios.get('http://ron-swanson-quotes.herokuapp.com/v2/quotes').then((response) => {
-          let quote = response.data[0];
-          postSlackMessage('https://slack.com/api/chat.postMessage', {
-            token: SLACKBOT_TOKEN,
-            channel: payload.event.channel,
-            text: '> ' + quote
-          });
-        })
-      }
-      else if(payload.event.text.includes("sfgov-content-sandbox")) {
-        postSlackMessage('https://slack.com/api/chat.postMessage', {
-          token: SLACKBOT_TOKEN,
-          channel: payload.event.channel,
-          thread_ts: payload.event.event_ts,
-          text: 'Let\'s chat.  I\'ll send you a direct message.'
-        })
-        postSlackMessage('https://slack.com/api/chat.postMessage', {
-          "token": SLACKBOT_TOKEN,
-          "channel": payload.event.user, // direct message user
-          "user": payload.event.user,
-          "as_user": true,
-          "attachments": [
-            {
-              "blocks": [
+
+    let directMessageToBot = (payload.event.type === 'message' && payload.event.channel_type === 'im' && !payload.event.bot_id) ? true : false;
+    if(payload.event.type === 'app_mention' || directMessageToBot) {
+      if(payload.event.text) {
+        if(payload.event.text.includes('quote')) {
+          axios.get('http://ron-swanson-quotes.herokuapp.com/v2/quotes').then((response) => {
+            let quote = response.data[0];
+            postSlackMessage('https://slack.com/api/chat.postMessage', {
+              token: SLACKBOT_TOKEN,
+              channel: payload.event.channel,
+              text: '> ' + quote
+            });
+          })
+        }
+        else if(payload.event.text.includes("sfgov-content-sandbox")) {
+          if(!directMessageToBot) { // not a direct message, respond in thread and direct message user
+            postSlackMessage('https://slack.com/api/chat.postMessage', {
+              token: SLACKBOT_TOKEN,
+              channel: payload.event.channel,
+              thread_ts: payload.event.event_ts,
+              text: 'Let\'s chat.  I\'ll send you a direct message.'
+            })
+          } else {
+            postSlackMessage('https://slack.com/api/chat.postMessage', {
+              "token": SLACKBOT_TOKEN,
+              "channel": payload.event.user, // direct message user
+              "user": payload.event.user,
+              "as_user": true,
+              "attachments": [
                 {
-                  "type": "section",
-                  "text": {
-                    "type": "mrkdwn",
-                    "text": "Hello <@" + payload.event.user +">.  You asked me to manually (re)create the <https://content-sfgov.pantheonsite.io|sf.gov content sandbox> on pantheon.  This will wipe out the existing sandbox and create a new one by cloning everything in the current production environment.\n\nAre you sure you want to do this?"
-                  }
-                },
-                {
-                  "type": "actions",
-                  "elements": [
+                  "blocks": [
                     {
-                      "type": "button",
+                      "type": "section",
                       "text": {
-                        "type": "plain_text",
-                        "emoji": true,
-                        "text": "Yes"
-                      },
-                      "style": "primary",
-                      "value": "sfgov_content_sandbox_yes"
+                        "type": "mrkdwn",
+                        "text": "Hello <@" + payload.event.user +">.  You asked me to manually (re)create the <https://content-sfgov.pantheonsite.io|sf.gov content sandbox> on pantheon.  This will wipe out the existing sandbox and create a new one by cloning everything in the current production environment.\n\nAre you sure you want to do this?"
+                      }
                     },
                     {
-                      "type": "button",
-                      "text": {
-                        "type": "plain_text",
-                        "emoji": true,
-                        "text": "No"
-                      },
-                      "style": "danger",
-                      "value": "sfgov_content_sandbox_no"
+                      "type": "actions",
+                      "elements": [
+                        {
+                          "type": "button",
+                          "text": {
+                            "type": "plain_text",
+                            "emoji": true,
+                            "text": "Yes"
+                          },
+                          "style": "primary",
+                          "value": "sfgov_content_sandbox_yes"
+                        },
+                        {
+                          "type": "button",
+                          "text": {
+                            "type": "plain_text",
+                            "emoji": true,
+                            "text": "No"
+                          },
+                          "style": "danger",
+                          "value": "sfgov_content_sandbox_no"
+                        }
+                      ]
                     }
                   ]
                 }
               ]
-            }
-          ]
-        });
-      }
-      else {
-        postSlackMessage('https://slack.com/api/chat.postMessage', {
-          token: SLACKBOT_TOKEN,
-          channel: payload.event.channel,
-          text: 'Help has arrived.\n' +
-            '>>>' + 
-            '`@ronbot sfgov-content-sandbox` - (re)create content sandbox on pantheon based on production\n' +
-            '`@ronbot quote` - be prepared to receive wisdom\n' +
-            '`@ronbot help` - this menu\n'
-        });
+            });
+          }
+        }
+        else {
+          postSlackMessage('https://slack.com/api/chat.postMessage', {
+            token: SLACKBOT_TOKEN,
+            channel: payload.event.channel,
+            text: 'Help has arrived.\n' +
+              '>>>' + 
+              '`@ronbot sfgov-content-sandbox` - (re)create content sandbox on pantheon based on production\n' +
+              '`@ronbot quote` - be prepared to receive wisdom\n' +
+              '`@ronbot help` - this menu\n'
+          });
+        }
       }
     } 
   }
