@@ -94,7 +94,6 @@ app.post('/slack-events', (req, res) => {
   } else {
     let payload = req.body;
     res.sendStatus(200);
-
     let directMessageToBot = (payload.event.type === 'message' && payload.event.channel_type === 'im' && !payload.event.bot_id) ? true : false;
     if(payload.event.type === 'app_mention' || directMessageToBot) {
       if(payload.event.text) {
@@ -116,52 +115,51 @@ app.post('/slack-events', (req, res) => {
               thread_ts: payload.event.event_ts,
               text: 'Let\'s chat.  I\'ll send you a direct message.'
             })
-          } else {
-            postSlackMessage('https://slack.com/api/chat.postMessage', {
-              "token": SLACKBOT_TOKEN,
-              "channel": payload.event.user, // direct message user
-              "user": payload.event.user,
-              "as_user": true,
-              "attachments": [
-                {
-                  "blocks": [
-                    {
-                      "type": "section",
-                      "text": {
-                        "type": "mrkdwn",
-                        "text": "Hello <@" + payload.event.user +">.  You asked me to manually (re)create the <https://content-sfgov.pantheonsite.io|sf.gov content sandbox> on pantheon.  This will wipe out the existing sandbox and create a new one by cloning everything in the current production environment.\n\nAre you sure you want to do this?"
-                      }
-                    },
-                    {
-                      "type": "actions",
-                      "elements": [
-                        {
-                          "type": "button",
-                          "text": {
-                            "type": "plain_text",
-                            "emoji": true,
-                            "text": "Yes"
-                          },
-                          "style": "primary",
-                          "value": "sfgov_content_sandbox_yes"
-                        },
-                        {
-                          "type": "button",
-                          "text": {
-                            "type": "plain_text",
-                            "emoji": true,
-                            "text": "No"
-                          },
-                          "style": "danger",
-                          "value": "sfgov_content_sandbox_no"
-                        }
-                      ]
-                    }
-                  ]
-                }
-              ]
-            });
           }
+          postSlackMessage('https://slack.com/api/chat.postMessage', {
+            "token": SLACKBOT_TOKEN,
+            "channel": payload.event.user, // direct message user
+            "user": payload.event.user,
+            "as_user": true,
+            "attachments": [
+              {
+                "blocks": [
+                  {
+                    "type": "section",
+                    "text": {
+                      "type": "mrkdwn",
+                      "text": "Hello <@" + payload.event.user +">.  You asked me to manually (re)create the <https://content-sfgov.pantheonsite.io|sf.gov content sandbox> on pantheon.  This will wipe out the existing sandbox and create a new one by cloning everything in the current production environment.\n\nAre you sure you want to do this?"
+                    }
+                  },
+                  {
+                    "type": "actions",
+                    "elements": [
+                      {
+                        "type": "button",
+                        "text": {
+                          "type": "plain_text",
+                          "emoji": true,
+                          "text": "Yes"
+                        },
+                        "style": "primary",
+                        "value": "sfgov_content_sandbox_yes"
+                      },
+                      {
+                        "type": "button",
+                        "text": {
+                          "type": "plain_text",
+                          "emoji": true,
+                          "text": "No"
+                        },
+                        "style": "danger",
+                        "value": "sfgov_content_sandbox_no"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          });
         }
         else {
           postSlackMessage('https://slack.com/api/chat.postMessage', {
