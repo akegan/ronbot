@@ -45,7 +45,7 @@ app.post('/slack-interactive', (req, res) => {
     axios.post(payload.response_url, {
       replace_original: "true",
       parse: "none",
-      text: 'SF.gov content sandbox building.\nThis will take a few minutes.  I\'ll periodically update you here.'
+      text: 'SF.gov content sandbox building.\nThis will take a few minutes.  I\'ll let you know when the build is finished.'
     }).then((response) => {
       axios.post('https://circleci.com/api/v1.1/project/github/SFDigitalServices/ci-jobs/tree/sfgov?circle-token=' + CIRCLECI_API_TOKEN,
         {build_parameters: { CIRCLE_JOB: 'build_sfgov_content_multidev'} }, {
@@ -58,13 +58,6 @@ app.post('/slack-interactive', (req, res) => {
             axios.get('https://circleci.com/api/v1.1/project/github/SFDigitalServices/ci-jobs/' + buildNum + '?circle-token=' + CIRCLECI_API_TOKEN)
               .then((response) => {
                 let status = response.data.status;
-                postSlackMessage('https://slack.com/api/chat.postMessage', {
-                  token: SLACKBOT_TOKEN,
-                  channel: statusChannel,
-                  // "thread_ts": statusThreadTs,
-                  parse: 'none',
-                  text: '<@' + userId + '> sf.gov content sandbox build status: `' + status + '`'
-                });
                 if(status === 'success' || status === 'fixed' || status === 'failed') {
                   let statusEmoji = status === 'failed' ? ':red_circle:' : ':white_check_mark:';
                   setTimeout(() => {
@@ -79,7 +72,11 @@ app.post('/slack-interactive', (req, res) => {
               });
             }, 150000); // check every 2.5 minutes
       }).catch((err) => {
-        console.log(err);
+        postSlackMessage('https://slack.com/api/chat.postMessage', {
+          token: SLACKBOT_TOKEN,
+          channel: statusChannel,
+          text: '<@' + userId + '> Something went wrong.  Tell someone about this:' + "\n" + '`' + err + '`' 
+        })
       });
     });
   }
