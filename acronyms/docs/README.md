@@ -23,9 +23,7 @@ sae: Some Acronym Entry
 
 Fill out the other fields if more context needs to be given.
 
-**Important: Be sure to click the radio button labeled
-
-> Create a **new branch** for this commit and start a pull request
+**Important**: Be sure to click the radio button labeled "Create a **new branch** for this commit and start a pull request"
 
 When finished, click the "Propose file change" button.
 
