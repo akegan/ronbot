@@ -11,9 +11,6 @@ const fs = require('fs');
 const SLACKBOT_TOKEN = process.env.SLACKBOT_TOKEN;
 const CIRCLECI_API_TOKEN = process.env.CIRCLECI_API_TOKEN;
 
-let channel;
-let unfurledAcroynms = [];
-let ephemeralMessagedUsers = [];
 let acronyms;
 
 try {
@@ -21,14 +18,6 @@ try {
 } catch(e) {
   console.log(e);
 }
-
-const clearGlobals = function() {
-  channel = undefined;
-  unfurledAcroynms = [];
-  ephemeralMessagedUsers = [];
-  setTimeout(clearGlobals, 7200000); // clear globals every 2 hours
-}
-clearGlobals();
 
 const postSlackMessage = function(url, postBody, successCallback, errorCallback) {
   axios.post(url, postBody, {
@@ -183,13 +172,35 @@ app.post('/slack-events', (req, res) => {
             ]
           });
         }
-        else if(payload.event.text.includes("add-acronym")) {
-          postSlackMessage('https://slack.com/api/chat.postMessage', {
-            token: SLACKBOT_TOKEN,
-            channel: payload.event.channel,
-            thread_ts: payload.event.ts,
-            text: "link to readme"
-          });
+        else if(payload.event.text.includes("acronym")) {
+          let acronym = payload.event.text.substring(payload.event.text.toLowerCase().indexOf('acronym') + 'acronym'.length)
+            .toLowerCase().trim();
+          let found = false;
+          let threadTs = payload.event.thread_ts ? payload.event.thread_ts : null;
+          for(let key in acronyms) {
+            let regex = '\\s?' + key.toLowerCase() + '(\\s|\\W|$)';
+            let re = new RegExp(regex, 'g');
+            let matches = acronym.match(re);
+            if(matches) {
+              found = true;
+              let messageText = acronyms[key];
+              postSlackMessage('https://slack.com/api/chat.postMessage', {
+                token: SLACKBOT_TOKEN,
+                channel: payload.event.channel,
+                thread_ts: threadTs,
+                text: '*' + key + '* is probably an acronym for _' + messageText + '_'
+              });
+              break;
+            }
+          }
+          if(!found) {
+            postSlackMessage('https://slack.com/api/chat.postMessage', {
+              token: SLACKBOT_TOKEN,
+              channel: payload.event.channel,
+              thread_ts: payload.event.ts,
+              text: "The acronym you requested was not found.  If you need to add it, please follow these instructions: "
+            });
+          }
         }
         else if(payload.event.text.includes("help")) {
           postSlackMessage('https://slack.com/api/chat.postMessage', {
@@ -198,51 +209,14 @@ app.post('/slack-events', (req, res) => {
             text: 'Help has arrived.\n' +
               '>>>' + 
               '`@ronbot sfgov-content-sandbox` - (re)create content sandbox on pantheon based on production\n' +
-              '`@ronbot quote` - be prepared to receive wisdom\n' +
+              '`@ronbot acronym abc` - if found, unfurls the acronym abc\n' + 
+              '`@ronbot quote` - be prepared to receive wisdom\n' + 
               '`@ronbot help` - this menu\n'
           });
         }
       }
     } else { // all other messages
-      let text = payload.event.text;
-      if(acronyms) {
-        if(!payload.event.subtype && payload.event.subtype !== 'bot_message') {
-          let threadId = payload.event.ts;
-          for(let key in acronyms) {
-            let regex = '\\s?' + key + '(\\s|\\W|$)';
-            let re = new RegExp(regex, 'g');
-            let matches = text.toLowerCase().match(re);
-            if(matches) {
-              if(unfurledAcroynms.includes(key) && channel == payload.event.channel) {
-                if(!ephemeralMessagedUsers.includes(payload.event.user)) {
-                  postSlackMessage('https://slack.com/api/chat.postEphemeral', {
-                    token: SLACKBOT_TOKEN,
-                    channel: payload.event.channel,
-                    attachments: 	[],
-                    text: '*' + key + '* was recently unfurled, so I won\'t be doing it again.',
-                    user: payload.event.user
-                  }, function() {
-                    ephemeralMessagedUsers.push(payload.event.user);
-                  });
-                }
-              }
-              else {
-                let messageText = acronyms[key];
-                postSlackMessage('https://slack.com/api/chat.postMessage', {
-                  token: SLACKBOT_TOKEN,
-                  channel: payload.event.channel,
-                  // thread_ts: threadId,
-                  text: '*' + key + '* is probably an acronym for _' + messageText + '_'
-                }, function() {
-                  channel = payload.event.channel;
-                  unfurledAcroynms.push(key);
-                });
-              }
-              break;
-            }
-          }
-        }
-      }
+
     }
   }
 });
