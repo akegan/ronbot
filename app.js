@@ -198,7 +198,7 @@ app.post('/slack-events', (req, res) => {
               token: SLACKBOT_TOKEN,
               channel: payload.event.channel,
               thread_ts: payload.event.ts,
-              text: "The acronym you requested was not found.  If you need to add it, please follow these instructions: "
+              text: "The acronym you requested was not found.  If you need to add it, please follow these instructions: https://github.com/SFDigitalServices/ronbot/tree/master/acronyms"
             });
           }
         }
