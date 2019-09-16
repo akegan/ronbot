@@ -4,4 +4,12 @@ orbs:
 workflows:
   heroku_deploy:
     jobs:
-      - heroku/deploy-via-git
+      - deploy
+jobs:
+  deploy:
+    executor: heroku/default
+    steps:
+      - checkout
+      - heroku/install
+      - heroku/deploy-via-git:
+          only-branch: master
