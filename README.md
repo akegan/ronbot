@@ -2,6 +2,7 @@ ronbot is a slackbot that does things
 
 ```
 @ronbot sfgov-content-sandbox - (re)create content sandbox on pantheon based on production
+@ronbot acronym abc - if found, unfurls the acronym abc
 @ronbot quote - be prepared to receive wisdom
 @ronbot help - this menu
 ```
